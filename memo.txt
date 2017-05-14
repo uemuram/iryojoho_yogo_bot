@@ -1,0 +1,5 @@
+<jar作成方法>
+・プロジェクトを右クリック
+・実行→実行の構成→Maven build
+・Goalにpackageを指定して実行
+・targetフォルダ下にjarができる
