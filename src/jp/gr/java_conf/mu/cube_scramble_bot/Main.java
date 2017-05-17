@@ -68,7 +68,7 @@ public class Main implements RequestHandler<Object, Object> {
 		int before2Face = -1;
 		int currentFace;
 		for (int i = 0; i < l; i++) {
-			// 回す面を決める。1つ前と同じ面を選ばないようにする
+			// 回す面を決める。
 			do {
 				currentFace = randomN(6);
 			} while (!faceCheck(currentFace, beforeFace, before2Face));
