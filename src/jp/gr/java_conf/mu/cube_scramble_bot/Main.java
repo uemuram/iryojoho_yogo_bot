@@ -30,14 +30,31 @@ public class Main implements RequestHandler<Object, Object> {
 		String scramble = generateScramble(20);
 		logger.log("スクランブル: " + scramble);
 
-		// ツイート
-		try {
-			Status status = twitter.updateStatus(scramble);
-			logger.log("Successfully updated the status to [" + status.getText() + "].");
-		} catch (TwitterException e) {
-			logger.log("ツイート失敗");
-			logger.log(e.getErrorMessage());
-		}
+		int count = 0;
+		boolean success = false;
+		// リトライ回数
+		int retryCount = 3;
+		do {
+			// ツイート
+			try {
+				count++;
+				Status status = twitter.updateStatus(scramble);
+				logger.log("Successfully updated the status to [" + status.getText() + "].");
+				success = true;
+			} catch (TwitterException e) {
+				logger.log("ツイート失敗");
+				logger.log(e.getErrorMessage());
+
+				// 失敗した場合は待機後に再実行
+				if (count < retryCount) {
+					try {
+						Thread.sleep(30000);
+					} catch (InterruptedException e2) {
+					}
+				}
+			}
+			// 最大で3回リトライする
+		} while (!success && count < retryCount);
 
 		return null;
 	}
