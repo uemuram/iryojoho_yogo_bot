@@ -42,8 +42,7 @@ public class Main implements RequestHandler<Object, Object> {
 				logger.log("Successfully updated the status to [" + status.getText() + "].");
 				success = true;
 			} catch (TwitterException e) {
-				logger.log("ツイート失敗");
-				logger.log(e.getErrorMessage());
+				logger.log("ツイート失敗 : " + e.getErrorMessage());
 
 				// 失敗した場合は待機後に再実行
 				if (count < retryCount) {
