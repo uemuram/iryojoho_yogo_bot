@@ -24,7 +24,6 @@ public class Main implements RequestHandler<Object, Object> {
 				.setOAuthAccessToken(System.getenv("twitter4j_oauth_accessToken"))
 				.setOAuthAccessTokenSecret(System.getenv("twitter4j_oauth_accessTokenSecret"));
 		TwitterFactory tf = new TwitterFactory(cb.build());
-		Twitter twitter = tf.getInstance();
 
 		// スクランブル生成
 		String scramble = generateScramble(20);
@@ -35,6 +34,7 @@ public class Main implements RequestHandler<Object, Object> {
 		// リトライ回数
 		int retryCount = 3;
 		do {
+			Twitter twitter = tf.getInstance();
 			// ツイート
 			try {
 				count++;
