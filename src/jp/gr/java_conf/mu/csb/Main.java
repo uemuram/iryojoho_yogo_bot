@@ -1,4 +1,4 @@
-package jp.gr.java_conf.mu.cube_scramble_bot;
+package jp.gr.java_conf.mu.csb;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
