@@ -3,3 +3,13 @@
 ・実行→実行の構成→Maven build
 ・Goalにpackageを指定して実行
 ・targetフォルダ下にjarができる
+
+
+非公式APIを呼ぶ
+http://qiita.com/39ff/items/c819a011dc1ac6fe864d
+https://mgng.mugbum.info/226
+http://www.otchy.net/20100912/using-twitter4j-oauth-authentication/
+
+
+ここから
+https://dev.twitter.com/webhooks/account-activity
