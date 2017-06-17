@@ -1,4 +1,4 @@
-package jp.gr.java_conf.mu.csb;
+package jp.gr.java_conf.mu.csb.handler;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
