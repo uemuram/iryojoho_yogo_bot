@@ -10,7 +10,7 @@ import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
-public class Main implements RequestHandler<Object, Object> {
+public class TweetScramble implements RequestHandler<Object, Object> {
 	private LambdaLogger logger;
 
 	public Object handleRequest(Object input, Context context) {
