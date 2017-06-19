@@ -99,7 +99,10 @@ public class GetRecord implements RequestHandler<Object, Object> {
 		// -----------------------------返信取得処理 ここまで-----------------------------
 
 		logger.log(responseList.size() + " 件の返信を取得");
-		for (Status status : responseList) {
+		int lastIndex = responseList.size() - 1;
+		// 古い順にループ
+		for (int i = lastIndex; i >= 0; i--) {
+			Status status = responseList.get(i);
 			logger.log("---------------------------------------------------------------------");
 			logger.log("ユーザ名:" + status.getUser().getName());
 			logger.log("ユーザ名(表示名):" + status.getUser().getScreenName());
