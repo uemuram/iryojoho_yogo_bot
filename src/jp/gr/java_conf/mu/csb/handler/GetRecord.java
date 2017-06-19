@@ -41,38 +41,62 @@ public class GetRecord implements RequestHandler<Object, Object> {
 		GetItemResult result = dynamoDBUtil.getItem("csb_status", "key", "get_record_since_id");
 		long sinceId = Long.parseLong(result.getItem().get("value").getS());
 		logger.log("ID: " + sinceId + " より後の返信を取得");
-		Paging paging = new Paging(sinceId);
 
-		int count = 0;
-		boolean success = false;
-		TwitterFactory tf;
-		ResponseList<Status> responseList = null;
-		// リトライ回数
-		int retryCount = 3;
-		do {
-			tf = new TwitterFactory(configuration);
-			Twitter twitter = tf.getInstance();
-			// 返信の一覧を取得
+		// -----------------------------返信取得処理 ここから-----------------------------
+		// 初期化
+		TwitterFactory tf = new TwitterFactory(configuration);
+		Twitter twitter = tf.getInstance();
+		ResponseList<Status> responseList;
+		ResponseList<Status> tmpResponseList;
+
+		// 一度に取得する返信数
+		int count = 20;
+		long maxId = 0L;
+		Paging paging;
+
+		// まず1ページ目を取得
+		paging = new Paging(1, count);
+		paging.setSinceId(sinceId);
+		try {
+			responseList = twitter.getMentionsTimeline(paging);
+			logger.log("返信取得 " + responseList.size() + " 件");
+		} catch (TwitterException e1) {
+			logger.log("返信取得失敗 : " + e1.getErrorMessage());
+			throw new RuntimeException(e1);
+		}
+		boolean endFlag = false;
+		if (responseList.size() < count) {
+			// 取得結果が取得件数より少なかった場合は、それ以上ないので終了
+			endFlag = true;
+		} else {
+			// 取得できた場合は最後のIDを取得して処理続行
+			maxId = responseList.get(responseList.size() - 1).getId() - 1;
+		}
+
+		// 1ページ目が取得できた場合は2ページ目以降を取得
+		while (!endFlag) {
+			paging = new Paging();
+			paging.setCount(count);
+			paging.setMaxId(maxId);
+			paging.setSinceId(sinceId);
 			try {
-				count++;
-				responseList = twitter.getMentionsTimeline(paging);
-				success = true;
+				tmpResponseList = twitter.getMentionsTimeline(paging);
+				logger.log("返信取得 " + tmpResponseList.size() + " 件 (maxId= " + maxId + " )");
 			} catch (TwitterException e1) {
 				logger.log("返信取得失敗 : " + e1.getErrorMessage());
-				// 失敗した場合は待機後に再実行
-				if (count < retryCount) {
-					try {
-						Thread.sleep(30000);
-					} catch (InterruptedException e2) {
-					}
-				}
+				throw new RuntimeException(e1);
 			}
-		} while (!success && count < retryCount);
-
-		// 取得に失敗した場合は終了
-		if (!success) {
-			return null;
+			// 取得結果を追加
+			responseList.addAll(tmpResponseList);
+			if (tmpResponseList.size() < count) {
+				// 取得結果が取得件数より少なかった場合は、それ以上ないので終了
+				endFlag = true;
+			} else {
+				// 取得できた場合は最後のIDを取得して処理続行
+				maxId = tmpResponseList.get(tmpResponseList.size() - 1).getId() - 1;
+			}
 		}
+		// -----------------------------返信取得処理 ここまで-----------------------------
 
 		logger.log(responseList.size() + " 件の返信を取得");
 		for (Status status : responseList) {
