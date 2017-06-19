@@ -8,6 +8,7 @@ import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
+import twitter4j.conf.Configuration;
 import twitter4j.conf.ConfigurationBuilder;
 
 public class TweetScramble implements RequestHandler<Object, Object> {
@@ -23,6 +24,7 @@ public class TweetScramble implements RequestHandler<Object, Object> {
 				.setOAuthConsumerSecret(System.getenv("twitter4j_oauth_consumerSecret"))
 				.setOAuthAccessToken(System.getenv("twitter4j_oauth_accessToken"))
 				.setOAuthAccessTokenSecret(System.getenv("twitter4j_oauth_accessTokenSecret"));
+		Configuration configuration = cb.build();
 
 		// スクランブル生成
 		String scramble = generateScramble(20);
@@ -34,7 +36,7 @@ public class TweetScramble implements RequestHandler<Object, Object> {
 		// リトライ回数
 		int retryCount = 3;
 		do {
-			tf = new TwitterFactory(cb.build());
+			tf = new TwitterFactory(configuration);
 			Twitter twitter = tf.getInstance();
 			// ツイート
 			try {
