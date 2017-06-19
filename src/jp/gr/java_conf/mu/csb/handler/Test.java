@@ -37,18 +37,22 @@ public class Test implements RequestHandler<Object, Object> {
 			Twitter twitter = tf.getInstance();
 
 			// ƒeƒXƒg
-			Paging arg0 = new Paging(1, 40);
+			Paging arg0 = new Paging(1, 3);
 			ResponseList<Status> responseList = null;
+			ResponseList<Status> responseList2 = null;
 			try {
 				count++;
 				// responseList = twitter.getRetweetsOfMe(arg0);
 				logger.log("a");
 				// responseList = twitter.getRetweetsOfMe();
 				// responseList = twitter.getHomeTimeline();
-				responseList = twitter.getUserTimeline("masaru_uemura", new Paging(3, 20));
+				// responseList = twitter.getUserTimeline("masaru_uemura", new
+				// Paging(3, 20));
 
-				
-				
+				//responseList2 = twitter.getHomeTimeline(arg0);
+				// responseList2 = twitter.getHomeTimeline();
+				 responseList = twitter.getMentionsTimeline();
+
 				success = true;
 				logger.log("c");
 			} catch (TwitterException e1) {
@@ -64,6 +68,7 @@ public class Test implements RequestHandler<Object, Object> {
 			}
 			logger.log("size:" + responseList.size());
 			for (Status b : responseList) {
+				logger.log("-----------------------");
 				logger.log("10:" + b.getUser().getName());
 				logger.log("20:" + b.getUser().getScreenName());
 				logger.log("30:" + b.getUser().getId() + "");
@@ -71,7 +76,27 @@ public class Test implements RequestHandler<Object, Object> {
 				logger.log("50:" + b.getId() + "");
 				logger.log("60:" + b.getCreatedAt() + "");
 				logger.log("70:" + b.getRetweetCount() + "");
+				logger.log("80:" + b.getInReplyToScreenName());
+				logger.log("90:" + b.getInReplyToStatusId() + "");
+				logger.log("100:" + b.getInReplyToUserId() + "");
 			}
+
+//			logger.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+//
+//			logger.log("size:" + responseList2.size());
+//			for (Status b : responseList2) {
+//				logger.log("-----------------------");
+//				logger.log("10:" + b.getUser().getName());
+//				logger.log("20:" + b.getUser().getScreenName());
+//				logger.log("30:" + b.getUser().getId() + "");
+//				logger.log("40:" + b.getText());
+//				logger.log("50:" + b.getId() + "");
+//				logger.log("60:" + b.getCreatedAt() + "");
+//				logger.log("70:" + b.getRetweetCount() + "");
+//				logger.log("80:" + b.getInReplyToScreenName());
+//				logger.log("90:" + b.getInReplyToStatusId() + "");
+//				logger.log("100:" + b.getInReplyToUserId() + "");
+//			}
 
 		} while (!success && count < retryCount);
 
