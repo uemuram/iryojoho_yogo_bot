@@ -36,7 +36,10 @@ public class TweetScramble implements RequestHandler<Object, Object> {
 		// ツイート
 		try {
 			Status status = twitter.updateStatus(scramble);
-			logger.log("Successfully updated the status to [" + status.getText() + "].");
+			logger.log("---------------------------------------------------------------------");
+			logger.log("ツイート内容:" + status.getText());
+			logger.log("ツイートID:" + status.getId() + "");
+			logger.log("ツイート生成日時:" + status.getCreatedAt() + "");
 		} catch (TwitterException e1) {
 			logger.log("ツイート失敗 : " + e1.getErrorMessage());
 			throw new RuntimeException(e1);
