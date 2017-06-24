@@ -18,6 +18,7 @@ public class TweetScramble implements RequestHandler<Object, Object> {
 		logger = context.getLogger();
 		logger.log("Input: " + input);
 
+		// Twitter利用準備
 		// 環境変数から各種キーを設定
 		ConfigurationBuilder cb = new ConfigurationBuilder();
 		cb.setDebugEnabled(true).setOAuthConsumerKey(System.getenv("twitter4j_oauth_consumerKey"))
@@ -25,38 +26,21 @@ public class TweetScramble implements RequestHandler<Object, Object> {
 				.setOAuthAccessToken(System.getenv("twitter4j_oauth_accessToken"))
 				.setOAuthAccessTokenSecret(System.getenv("twitter4j_oauth_accessTokenSecret"));
 		Configuration configuration = cb.build();
+		TwitterFactory tf = new TwitterFactory(configuration);
+		Twitter twitter = tf.getInstance();
 
 		// スクランブル生成
 		String scramble = generateScramble(20);
 		logger.log("スクランブル: " + scramble);
 
-		int count = 0;
-		boolean success = false;
-		TwitterFactory tf;
-		// リトライ回数
-		int retryCount = 3;
-		do {
-			tf = new TwitterFactory(configuration);
-			Twitter twitter = tf.getInstance();
-			// ツイート
-			try {
-				count++;
-				Status status = twitter.updateStatus(scramble);
-				logger.log("Successfully updated the status to [" + status.getText() + "].");
-				success = true;
-			} catch (TwitterException e) {
-				logger.log("ツイート失敗 : " + e.getErrorMessage());
-
-				// 失敗した場合は待機後に再実行
-				if (count < retryCount) {
-					try {
-						Thread.sleep(30000);
-					} catch (InterruptedException e2) {
-					}
-				}
-			}
-			// 最大で3回リトライする
-		} while (!success && count < retryCount);
+		// ツイート
+		try {
+			Status status = twitter.updateStatus(scramble);
+			logger.log("Successfully updated the status to [" + status.getText() + "].");
+		} catch (TwitterException e1) {
+			logger.log("ツイート失敗 : " + e1.getErrorMessage());
+			throw new RuntimeException(e1);
+		}
 
 		return null;
 	}
