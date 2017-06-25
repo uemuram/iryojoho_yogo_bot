@@ -1,9 +1,16 @@
 package jp.gr.java_conf.mu.csb.handler;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
+import jp.gr.java_conf.mu.csb.util.DynamoDBUtil;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -14,9 +21,14 @@ import twitter4j.conf.ConfigurationBuilder;
 public class TweetScramble implements RequestHandler<Object, Object> {
 	private LambdaLogger logger;
 
+	private static final String TABLE_NAME_SCRAMBLE = System.getenv("table_name_scramble");
+
 	public Object handleRequest(Object input, Context context) {
 		logger = context.getLogger();
 		logger.log("Input: " + input);
+
+		// DynamoDB利用準備
+		DynamoDBUtil dynamoDBUtil = new DynamoDBUtil(logger);
 
 		// Twitter利用準備
 		// 環境変数から各種キーを設定
@@ -34,8 +46,9 @@ public class TweetScramble implements RequestHandler<Object, Object> {
 		logger.log("スクランブル: " + scramble);
 
 		// ツイート
+		Status status;
 		try {
-			Status status = twitter.updateStatus(scramble);
+			status = twitter.updateStatus(scramble);
 			logger.log("---------------------------------------------------------------------");
 			logger.log("ツイート内容:" + status.getText());
 			logger.log("ツイートID:" + status.getId() + "");
@@ -44,6 +57,18 @@ public class TweetScramble implements RequestHandler<Object, Object> {
 			logger.log("ツイート失敗 : " + e1.getErrorMessage());
 			throw new RuntimeException(e1);
 		}
+
+		// ツイート時刻を取得
+		LocalDateTime localDateTime = LocalDateTime.parse(status.getCreatedAt().toString(),
+				DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz yyyy"));
+		String createdAt = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(localDateTime);
+
+		// ツイート内容をDBに登録
+		Map<String, AttributeValue> item = new HashMap<String, AttributeValue>();
+		item.put("id", new AttributeValue().withS(status.getId() + ""));
+		item.put("scramble", new AttributeValue().withS(status.getText()));
+		item.put("tweet_date", new AttributeValue().withS(createdAt));
+		dynamoDBUtil.putItem(TABLE_NAME_SCRAMBLE, item);
 
 		return null;
 	}
