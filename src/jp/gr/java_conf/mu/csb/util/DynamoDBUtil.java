@@ -27,16 +27,6 @@ public class DynamoDBUtil {
 		this.dynamoDBClient = AmazonDynamoDBClientBuilder.standard().withRegion(Regions.AP_NORTHEAST_1).build();
 	}
 
-	// public void getItem(String tableName, String hashName, int id) {
-	// System.out.println("--- "111 + tableName + " ---");
-	// Map<String, AttributeValue> key = new HashMap<String, AttributeValue>();
-	// key.put(hashName, new AttributeValue().withN(Integer.toString(id)));
-	// GetItemRequest getItemRequest = new
-	// GetItemRequest().withTableName(tableName).withKey(key);
-	// GetItemResult result = dynamoDBClient.getItem(getItemRequest);
-	// printItem(result.getItem());
-	// }
-
 	// ƒAƒCƒeƒ€‚ğ1Œæ“¾(hashName = hashValue‚ÌğŒ‚ÅŒŸõ)
 	public GetItemResult getItem(String tableName, String hashName, String hashValue) {
 		logger.log("-------getItem(" + tableName + ", " + hashName + "=" + hashValue + ")-------");
