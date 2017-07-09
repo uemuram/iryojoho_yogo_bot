@@ -28,8 +28,10 @@ public class DynamoDBUtil {
 	}
 
 	// アイテムを1件取得(hashName = hashValueの条件で検索)
-	public GetItemResult getItem(String tableName, String hashName, String hashValue) {
-		logger.log("-------getItem(" + tableName + ", " + hashName + "=" + hashValue + ")-------");
+	public Map<String, AttributeValue> getItem(String tableName, String hashName, String hashValue) {
+		logger.log("--------------getItem start--------------");
+		logger.log("テーブル名: " + tableName);
+		logger.log("条件: " + hashName + "=" + hashValue);
 
 		// 検索条件
 		Map<String, AttributeValue> key = new HashMap<String, AttributeValue>();
@@ -39,8 +41,30 @@ public class DynamoDBUtil {
 		// 検索実施
 		GetItemResult result = dynamoDBClient.getItem(getItemRequest);
 		printItem(result.getItem(), "get");
+		logger.log("--------------getItem end----------------");
 
-		return result;
+		return result.getItem();
+	}
+
+	// アイテムを1件取得(hashName = hashValue、rangeName = rangeValueの条件で検索)
+	public Map<String, AttributeValue> getItem(String tableName, String hashName, String hashValue, String rangeName,
+			String rangeValue) {
+		logger.log("--------------getItem start--------------");
+		logger.log("テーブル名: " + tableName);
+		logger.log("条件: " + hashName + "=" + hashValue + "," + rangeName + "=" + rangeValue);
+
+		// 検索条件
+		Map<String, AttributeValue> key = new HashMap<String, AttributeValue>();
+		key.put(hashName, new AttributeValue().withS(hashValue));
+		key.put(rangeName, new AttributeValue().withS(rangeValue));
+
+		// 検索実施
+		GetItemRequest getItemRequest = new GetItemRequest().withTableName(tableName).withKey(key);
+		GetItemResult result = dynamoDBClient.getItem(getItemRequest);
+		printItem(result.getItem(), "get");
+		logger.log("--------------getItem end----------------");
+
+		return result.getItem();
 	}
 
 	// アイテム1件を登録
@@ -74,15 +98,20 @@ public class DynamoDBUtil {
 	// アイテムの情報を表示
 	public void printItem(Map<String, AttributeValue> attributeList, String message) {
 		logger.log("-------DynamoDBItem(" + message + ")-------");
-		for (Map.Entry<String, AttributeValue> item : attributeList.entrySet()) {
-			String attributeName = item.getKey();
-			AttributeValue value = item.getValue();
-			logger.log(attributeName + " " + (value.getS() == null ? "" : "S=[" + value.getS() + "]")
-					+ (value.getN() == null ? "" : "N=[" + value.getN() + "]")
-					+ (value.getB() == null ? "" : "B=[" + value.getB() + "]")
-					+ (value.getSS() == null ? "" : "SS=[" + value.getSS() + "]")
-					+ (value.getNS() == null ? "" : "NS=[" + value.getNS() + "]")
-					+ (value.getBS() == null ? "" : "BS=[" + value.getBS() + "] n"));
+
+		if (attributeList == null) {
+			logger.log("空アイテム");
+		} else {
+			for (Map.Entry<String, AttributeValue> item : attributeList.entrySet()) {
+				String attributeName = item.getKey();
+				AttributeValue value = item.getValue();
+				logger.log(attributeName + " " + (value.getS() == null ? "" : "S=[" + value.getS() + "]")
+						+ (value.getN() == null ? "" : "N=[" + value.getN() + "]")
+						+ (value.getB() == null ? "" : "B=[" + value.getB() + "]")
+						+ (value.getSS() == null ? "" : "SS=[" + value.getSS() + "]")
+						+ (value.getNS() == null ? "" : "NS=[" + value.getNS() + "]")
+						+ (value.getBS() == null ? "" : "BS=[" + value.getBS() + "] n"));
+			}
 		}
 		logger.log("--------------------------");
 	}

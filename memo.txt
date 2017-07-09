@@ -13,3 +13,19 @@ http://www.otchy.net/20100912/using-twitter4j-oauth-authentication/
 
 ここから
 https://dev.twitter.com/webhooks/account-activity
+
+
+DynamoDBコードサンプル
+https://www.infoscoop.org/blogjp/2014/08/28/aws-dynamodb-getitem-by-java/
+https://www.infoscoop.org/blogjp/2014/08/29/aws-dynamodb-query-by-java/
+https://www.infoscoop.org/blogjp/2014/09/02/aws-dynamodb-putitem-by-java/
+
+タイムラインの取り方。わかりやすい。
+https://dev.twitter.com/rest/reference/get/statuses/mentions_timeline
+https://dev.twitter.com/rest/public/timelines
+
+DynamoDB基本
+http://dev.classmethod.jp/series/conceptual-learning-about-dynamodb/
+
+
+865916364367712257

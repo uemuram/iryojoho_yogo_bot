@@ -1,9 +1,13 @@
 package jp.gr.java_conf.mu.csb.handler;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.amazonaws.services.dynamodbv2.model.GetItemResult;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -21,12 +25,17 @@ import twitter4j.conf.ConfigurationBuilder;
 public class GetRecord implements RequestHandler<Object, Object> {
 	private LambdaLogger logger;
 
+	private static final String TABLE_NAME_SCRAMBLE = System.getenv("table_name_scramble");
+	private static final String TABLE_NAME_STATUS = System.getenv("table_name_status");
+	private static final String TABLE_NAME_RECORD = System.getenv("table_name_record");
+
 	public Object handleRequest(Object input, Context context) {
 		logger = context.getLogger();
 		logger.log("Input: " + input);
 
 		// DynamoDB利用準備
 		DynamoDBUtil dynamoDBUtil = new DynamoDBUtil(logger);
+		Map<String, AttributeValue> item;
 
 		// Twitter利用準備
 		// 環境変数から各種キーを設定
@@ -36,16 +45,16 @@ public class GetRecord implements RequestHandler<Object, Object> {
 				.setOAuthAccessToken(System.getenv("twitter4j_oauth_accessToken"))
 				.setOAuthAccessTokenSecret(System.getenv("twitter4j_oauth_accessTokenSecret"));
 		Configuration configuration = cb.build();
+		TwitterFactory tf = new TwitterFactory(configuration);
+		Twitter twitter = tf.getInstance();
 
 		// 前回までで取り込んだIDを取得
-		GetItemResult result = dynamoDBUtil.getItem("csb_status", "key", "get_record_since_id");
-		long sinceId = Long.parseLong(result.getItem().get("value").getS());
+		item = dynamoDBUtil.getItem(TABLE_NAME_STATUS, "key", "get_record_since_id");
+		long sinceId = Long.parseLong(item.get("value").getS());
 		logger.log("ID: " + sinceId + " より後の返信を取得");
 
 		// -----------------------------返信取得処理 ここから-----------------------------
 		// 初期化
-		TwitterFactory tf = new TwitterFactory(configuration);
-		Twitter twitter = tf.getInstance();
 		ResponseList<Status> responseList;
 		ResponseList<Status> tmpResponseList;
 
@@ -96,14 +105,30 @@ public class GetRecord implements RequestHandler<Object, Object> {
 				maxId = tmpResponseList.get(tmpResponseList.size() - 1).getId() - 1;
 			}
 		}
+		logger.log("計 " + responseList.size() + " 件の返信を取得");
 		// -----------------------------返信取得処理 ここまで-----------------------------
 
-		logger.log(responseList.size() + " 件の返信を取得");
-		int lastIndex = responseList.size() - 1;
+		// キャッシュ
+		// ツイート済みのスクランブルのツイートID
+		Map<String, Boolean> scrambleIdCache = new HashMap<String, Boolean>();
+		// 登録する記録
+		Map<String, Status> recordCache = new HashMap<String, Status>();
+
 		// 古い順にループ
+		int lastIndex = responseList.size() - 1;
+		int loopCount = 0;
 		for (int i = lastIndex; i >= 0; i--) {
+			loopCount++;
+
+			// 10回に1回、キャッシュされた内容をDBに反映
+			if (loopCount % 10 == 0) {
+				updateDb(recordCache, dynamoDBUtil);
+				recordCache.clear();
+			}
+
 			Status status = responseList.get(i);
-			logger.log("---------------------------------------------------------------------");
+			logger.log(loopCount
+					+ " ---------------------------------------------------------------------------------------------------------");
 			logger.log("ユーザ名:" + status.getUser().getName());
 			logger.log("ユーザ名(表示名):" + status.getUser().getScreenName());
 			logger.log("返信内容:" + status.getText());
@@ -114,37 +139,108 @@ public class GetRecord implements RequestHandler<Object, Object> {
 
 			// 返信先ツイートIDがとれない場合(特定のツイートに対する返信ではない場合)はスキップ
 			if (status.getInReplyToStatusId() == -1) {
-				logger.log("スキップ(特定ツイートに対する返信以外)");
+				logger.log("スキップ(返信以外)");
+				continue;
+			}
+			// 返信先ID
+			String replyToId = status.getInReplyToStatusId() + "";
+			if (scrambleIdCache.get(replyToId) == null) {
+				// DBから、過去に生成したスクランブルを取得してキャッシュ
+				item = dynamoDBUtil.getItem(TABLE_NAME_SCRAMBLE, "id", replyToId);
+				if (item == null) {
+					scrambleIdCache.put(replyToId, false);
+				} else {
+					scrambleIdCache.put(replyToId, true);
+				}
+			}
+			// 過去に生成したスクランブルに対する返信ではない場合はスキップ
+			if (!scrambleIdCache.get(replyToId)) {
+				logger.log("スキップ(対象ツイート以外への返信)");
+				continue;
+			}
+			// ツイートから、最初に出てくる数字部分を抽出できなければスキップ
+			String recordStr = getRecordStr(status.getText());
+			if (recordStr == null) {
 				continue;
 			}
 
-			// ツイートから、最初に出てくる数字部分を抽出
-			Matcher matcher = Pattern.compile("^@[^ ]+? \\D*(\\d+\\.\\d+|\\d+).*$").matcher(status.getText());
-			String recordStr;
-			if (matcher.find()) {
-				recordStr = matcher.group(1);
-				logger.log("記録を抽出1: " + recordStr);
-			} else {
-				// 数字部分が取得できなかった場合はスキップ
-				logger.log("スキップ(記録なし)");
-				continue;
-			}
-
-			// 数値型に変換。変換できなかった場合はスキップ
-			double record;
-			try {
-				// 小数第3位で四捨五入した上でdouble型に変換
-				record = Double.parseDouble(String.format("%.2f", Double.parseDouble(recordStr)));
-				logger.log("記録を抽出2: " + record);
-			} catch (Exception e) {
-				continue;
-			}
-
-			// 取得されたデータを登録
-
+			// ここまで到達したら、DB登録対象としてキャッシュに入れる(返信先IDが重複していた場合は新しい方が優先される)
+			String key = status.getUser().getName() + "_" + replyToId;
+			recordCache.put(key, status);
 		}
 
+		// 最終的にもう一度DB更新
+		updateDb(recordCache, dynamoDBUtil);
+
+		logger.log(
+				"---------------------------------------------------------------------------------------------------------");
 		return null;
+	}
+
+	// 記録をDBに反映
+	private void updateDb(Map<String, Status> recordCache, DynamoDBUtil dynamoDBUtil) {
+		logger.log("*******DB反映開始*******");
+
+		long maxTweetId = 0L;
+
+		for (Map.Entry<String, Status> entry : recordCache.entrySet()) {
+			String key = entry.getKey();
+			Status status = entry.getValue();
+			logger.log("****" + key + "****");
+
+			// ツイート日時を抽出
+			LocalDateTime localDateTime = LocalDateTime.parse(status.getCreatedAt().toString(),
+					DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz yyyy"));
+			String createdAt = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(localDateTime);
+			// 記録を抽出
+			String recordStr = getRecordStr(status.getText());
+			// 最大のツイートIDを抽出
+			if (status.getId() > maxTweetId) {
+				maxTweetId = status.getId();
+			}
+
+			Map<String, AttributeValue> putItem = new HashMap<String, AttributeValue>();
+			putItem.put("user_name", new AttributeValue().withS(status.getUser().getName() + ""));
+			putItem.put("reply_to_id", new AttributeValue().withS(status.getInReplyToStatusId() + ""));
+			putItem.put("reply_id", new AttributeValue().withS(status.getId() + ""));
+			putItem.put("record", new AttributeValue().withN(recordStr));
+			putItem.put("reply_date", new AttributeValue().withS(createdAt));
+			dynamoDBUtil.putItem(TABLE_NAME_RECORD, putItem);
+		}
+		// sinceID(どこまでDBに反映したか)を更新
+		if (maxTweetId > 0L) {
+			Map<String, AttributeValue> putItem = new HashMap<String, AttributeValue>();
+			putItem.put("key", new AttributeValue().withS("get_record_since_id"));
+			putItem.put("value", new AttributeValue().withS(maxTweetId + ""));
+			dynamoDBUtil.putItem(TABLE_NAME_STATUS, putItem);
+		}
+		logger.log("*******DB反映終了*******");
+	}
+
+	// ツイートの文字列から記録を抽出する。
+	// 記録になる文字列がなければnullを返す
+	private String getRecordStr(String tweetText) {
+		// ツイートから、最初に出てくる数字部分を抽出
+		Matcher matcher = Pattern.compile("^@[^ ]+? \\D*(\\d+\\.\\d+|\\d+).*$").matcher(tweetText);
+		String recordStr;
+		if (matcher.find()) {
+			recordStr = matcher.group(1);
+			logger.log("記録を抽出1: " + recordStr);
+		} else {
+			// 数字部分が取得できなかった場合は終了
+			logger.log("スキップ(記録なし)");
+			return null;
+		}
+		try {
+			// 小数第3位で四捨五入
+			recordStr = String.format("%.2f", Double.parseDouble(recordStr));
+			logger.log("記録を抽出2: " + recordStr);
+		} catch (Exception e) {
+			// フォーマット変換に失敗した場合は終了
+			logger.log("スキップ(フォーマット整備失敗)");
+			return null;
+		}
+		return recordStr;
 	}
 
 }
