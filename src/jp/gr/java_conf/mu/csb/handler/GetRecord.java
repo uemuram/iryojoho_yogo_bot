@@ -165,7 +165,7 @@ public class GetRecord implements RequestHandler<Object, Object> {
 			}
 
 			// ここまで到達したら、DB登録対象としてキャッシュに入れる(返信先IDが重複していた場合は新しい方が優先される)
-			String key = status.getUser().getName() + "_" + replyToId;
+			String key = status.getUser().getScreenName() + "_" + replyToId;
 			recordCache.put(key, status);
 		}
 
@@ -200,7 +200,7 @@ public class GetRecord implements RequestHandler<Object, Object> {
 			}
 
 			Map<String, AttributeValue> putItem = new HashMap<String, AttributeValue>();
-			putItem.put("user_name", new AttributeValue().withS(status.getUser().getName() + ""));
+			putItem.put("user_name", new AttributeValue().withS(status.getUser().getScreenName() + ""));
 			putItem.put("reply_to_id", new AttributeValue().withS(status.getInReplyToStatusId() + ""));
 			putItem.put("reply_id", new AttributeValue().withS(status.getId() + ""));
 			putItem.put("record", new AttributeValue().withN(recordStr));
