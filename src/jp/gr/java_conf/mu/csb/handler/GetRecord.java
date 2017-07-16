@@ -4,10 +4,13 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.amazonaws.services.dynamodbv2.model.AttributeAction;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -28,6 +31,7 @@ public class GetRecord implements RequestHandler<Object, Object> {
 	private static final String TABLE_NAME_SCRAMBLE = System.getenv("table_name_scramble");
 	private static final String TABLE_NAME_STATUS = System.getenv("table_name_status");
 	private static final String TABLE_NAME_RECORD = System.getenv("table_name_record");
+	private static final String TABLE_NAME_USER = System.getenv("table_name_user");
 
 	public Object handleRequest(Object input, Context context) {
 		logger = context.getLogger();
@@ -113,6 +117,8 @@ public class GetRecord implements RequestHandler<Object, Object> {
 		Map<String, Boolean> scrambleIdCache = new HashMap<String, Boolean>();
 		// 登録する記録
 		Map<String, Status> recordCache = new HashMap<String, Status>();
+		// DB登録済みユーザの今までのツイート数
+		Map<String, Integer> userTweetCountCache = new HashMap<String, Integer>();
 
 		// 古い順にループ
 		int lastIndex = responseList.size() - 1;
@@ -122,7 +128,7 @@ public class GetRecord implements RequestHandler<Object, Object> {
 
 			// 10回に1回、キャッシュされた内容をDBに反映
 			if (loopCount % 10 == 0) {
-				updateDb(recordCache, dynamoDBUtil);
+				updateDb(recordCache, userTweetCountCache, dynamoDBUtil);
 				recordCache.clear();
 			}
 
@@ -165,12 +171,33 @@ public class GetRecord implements RequestHandler<Object, Object> {
 			}
 
 			// ここまで到達したら、DB登録対象としてキャッシュに入れる(返信先IDが重複していた場合は新しい方が優先される)
-			String key = status.getUser().getScreenName() + "_" + replyToId;
+			String screenName = status.getUser().getScreenName();
+			String key = screenName + "_" + replyToId;
 			recordCache.put(key, status);
+			// 対象ユーザの未集計ツイート数をDBから取得
+			if (userTweetCountCache.get(screenName) == null) {
+				item = dynamoDBUtil.getItem(TABLE_NAME_USER, "user_name", screenName);
+				if (item == null) {
+					userTweetCountCache.put(screenName, Integer.valueOf(0));
+					// 未登録の場合はここで登録しておく
+					Map<String, AttributeValue> putItem = new HashMap<String, AttributeValue>();
+					putItem.put("user_name", new AttributeValue().withS(screenName));
+					putItem.put("not_summarized_tweet_count", new AttributeValue().withN("0"));
+					putItem.put("oldest_summarized_tweet_id", new AttributeValue().withS("0"));
+					dynamoDBUtil.putItem(TABLE_NAME_USER, putItem);
+
+				} else {
+					userTweetCountCache.put(screenName, Integer.valueOf(item.get("not_summarized_tweet_count").getN()));
+				}
+			}
+			// 対象ユーザの未集計ツイート数をインクリメントしてキャッシュ
+			int userTweetCount = userTweetCountCache.get(screenName) + 1;
+			userTweetCountCache.put(screenName, Integer.valueOf(userTweetCount));
+
 		}
 
 		// 最終的にもう一度DB更新
-		updateDb(recordCache, dynamoDBUtil);
+		updateDb(recordCache, userTweetCountCache, dynamoDBUtil);
 
 		logger.log(
 				"---------------------------------------------------------------------------------------------------------");
@@ -178,15 +205,17 @@ public class GetRecord implements RequestHandler<Object, Object> {
 	}
 
 	// 記録をDBに反映
-	private void updateDb(Map<String, Status> recordCache, DynamoDBUtil dynamoDBUtil) {
+	private void updateDb(Map<String, Status> recordCache, Map<String, Integer> userTweetCountCache,
+			DynamoDBUtil dynamoDBUtil) {
 		logger.log("*******DB反映開始*******");
 
 		long maxTweetId = 0L;
 
+		// 記録反映
 		for (Map.Entry<String, Status> entry : recordCache.entrySet()) {
 			String key = entry.getKey();
 			Status status = entry.getValue();
-			logger.log("****" + key + "****");
+			logger.log("****" + key + "****(記録)");
 
 			// ツイート日時を抽出
 			LocalDateTime localDateTime = LocalDateTime.parse(status.getCreatedAt().toString(),
@@ -207,6 +236,23 @@ public class GetRecord implements RequestHandler<Object, Object> {
 			putItem.put("reply_date", new AttributeValue().withS(createdAt));
 			dynamoDBUtil.putItem(TABLE_NAME_RECORD, putItem);
 		}
+
+		// 件数反映
+		for (Entry<String, Integer> entry : userTweetCountCache.entrySet()) {
+			String key = entry.getKey();
+			int userTweetCount = entry.getValue();
+			logger.log("****" + key + "****(件数)");
+
+			Map<String, AttributeValue> updateKey = new HashMap<String, AttributeValue>();
+			updateKey.put("user_name", new AttributeValue().withS(key));
+
+			Map<String, AttributeValueUpdate> updateItem = new HashMap<String, AttributeValueUpdate>();
+			updateItem.put("not_summarized_tweet_count", new AttributeValueUpdate().withAction(AttributeAction.PUT)
+					.withValue(new AttributeValue().withN(userTweetCount + "")));
+
+			dynamoDBUtil.updateItem(TABLE_NAME_USER, updateKey, updateItem);
+		}
+
 		// sinceID(どこまでDBに反映したか)を更新
 		if (maxTweetId > 0L) {
 			Map<String, AttributeValue> putItem = new HashMap<String, AttributeValue>();

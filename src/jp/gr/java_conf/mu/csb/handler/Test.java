@@ -4,7 +4,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-import twitter4j.Paging;
 import twitter4j.ResponseList;
 import twitter4j.Status;
 import twitter4j.Twitter;
@@ -37,9 +36,9 @@ public class Test implements RequestHandler<Object, Object> {
 			Twitter twitter = tf.getInstance();
 
 			// ƒeƒXƒg
-			Paging arg0 = new Paging(1, 3);
+//			Paging arg0 = new Paging(1, 3);
 			ResponseList<Status> responseList = null;
-			ResponseList<Status> responseList2 = null;
+//			ResponseList<Status> responseList2 = null;
 			try {
 				count++;
 				// responseList = twitter.getRetweetsOfMe(arg0);
