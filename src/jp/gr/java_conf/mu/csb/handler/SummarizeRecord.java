@@ -1,11 +1,36 @@
 package jp.gr.java_conf.mu.csb.handler;
 
+import java.awt.BasicStroke;
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.CategoryAxis;
+import org.jfree.chart.axis.CategoryLabelPositions;
+import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.renderer.category.LineAndShapeRenderer;
+import org.jfree.data.category.DefaultCategoryDataset;
+
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import jp.gr.java_conf.mu.csb.util.DynamoDBUtil;
+import twitter4j.Status;
+import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
+import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.Configuration;
 import twitter4j.conf.ConfigurationBuilder;
@@ -15,6 +40,9 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 
 	private static final String TABLE_NAME_RECORD = System.getenv("table_name_record");
 	private static final String TABLE_NAME_USER = System.getenv("table_name_user");
+
+	private static final int SUMMARIZE_TRIGGER_TWEET_COUNT = 5;
+	private static final int RECORD_COUNT_FOR_GRAPH = 20;
 
 	public Object handleRequest(Object input, Context context) {
 		logger = context.getLogger();
@@ -34,7 +62,111 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 		TwitterFactory tf = new TwitterFactory(configuration);
 		Twitter twitter = tf.getInstance();
 
+		// DBからユーザ一覧を取得(未処理のツイート数が一定数より多いユーザのみ抽出
+		List<Map<String, AttributeValue>> users = dynamoDBUtil.scan(TABLE_NAME_USER, "not_summarized_tweet_count",
+				ComparisonOperator.GE, SUMMARIZE_TRIGGER_TWEET_COUNT);
+
+		// 対象ユーザに対してループ
+		int count = 0;
+		for (Map<String, AttributeValue> item : users) {
+			count++;
+			logger.log(count + "----------------------------------------------------------");
+
+			// DB取得結果を整理
+			String userName = item.get("user_name").getS();
+			String oldestSummarizedTweetId = item.get("oldest_summarized_tweet_id").getS();
+
+			logger.log("ユーザ名: " + userName);
+			logger.log("最古の分析済みツイートID: " + oldestSummarizedTweetId);
+
+			// 対象ユーザの記録を検索
+			List<Map<String, AttributeValue>> records = dynamoDBUtil.query(TABLE_NAME_RECORD, "user_name", userName,
+					"reply_id", ComparisonOperator.GE, oldestSummarizedTweetId, "user_name-reply_id-index");
+
+			// グラフ画像を生成
+			File graphFile = createGraph(records, userName);
+
+			// ツイートと画像添付
+			Status status;
+			try {
+				status = twitter.updateStatus(new StatusUpdate("@" + userName + " " + "記録を通知します。").media(graphFile));
+				logger.log("---------------------------------------------------------------------");
+				logger.log("ツイート内容:" + status.getText());
+				logger.log("ツイートID:" + status.getId() + "");
+				logger.log("ツイート生成日時:" + status.getCreatedAt() + "");
+			} catch (TwitterException e1) {
+				logger.log("ツイート失敗 : " + e1.getErrorMessage());
+				throw new RuntimeException(e1);
+			}
+
+			// ユーザ情報を更新
+			// 次回の起点となるツイートID
+			int size = item.size();
+			int idx = size >= RECORD_COUNT_FOR_GRAPH ? size - RECORD_COUNT_FOR_GRAPH : 0;
+			String oldestSummarizedTweetIdUpd = records.get(idx).get("reply_id").getS();
+
+			// 更新実施
+			Map<String, AttributeValue> putItem = new HashMap<String, AttributeValue>();
+			putItem.put("user_name", new AttributeValue().withS(userName));
+			putItem.put("not_summarized_tweet_count", new AttributeValue().withN("0"));
+			putItem.put("oldest_summarized_tweet_id", new AttributeValue().withS(oldestSummarizedTweetIdUpd));
+			dynamoDBUtil.putItem(TABLE_NAME_USER, putItem);
+		}
+
 		return null;
+	}
+
+	private File createGraph(List<Map<String, AttributeValue>> records, String userName) {
+
+		// 取り出すデータ範囲の決定
+		int size = records.size();
+		int start = size >= RECORD_COUNT_FOR_GRAPH ? size - RECORD_COUNT_FOR_GRAPH : 0;
+		int end = size - 1;
+
+		// グラフ用データ準備
+		String series1 = "record";
+		DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+		// 記録でループ
+		for (int i = start; i <= end; i++) {
+			Map<String, AttributeValue> item = records.get(i);
+
+			// データを取り出す
+			double record = Double.parseDouble(item.get("record").getN());
+			String replyDate = item.get("reply_date").getS();
+			logger.log(replyDate + " : " + record);
+			dataset.addValue(record, series1, replyDate);
+		}
+
+		// JFreeChartオブジェクトの生成
+		JFreeChart chart = ChartFactory.createLineChart("Record(@" + userName + ")", "date", "sec", dataset,
+				PlotOrientation.VERTICAL, false, true, false);
+
+		CategoryPlot plot = chart.getCategoryPlot();
+		LineAndShapeRenderer renderer = (LineAndShapeRenderer) plot.getRenderer();
+		// 線の太さを設定
+		renderer.setSeriesStroke(0, new BasicStroke(2));
+		// 線の図形を表示
+		renderer.setSeriesShapesVisible(0, true);
+		// 線の付近に値を表示
+		renderer.setBaseItemLabelGenerator(new StandardCategoryItemLabelGenerator());
+		renderer.setBaseItemLabelsVisible(true);
+		// ラベルの向きを変える
+		CategoryAxis axis = plot.getDomainAxis();
+		axis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
+
+		// グラフ出力
+		String fileName = "record_" + DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS").format(LocalDateTime.now())
+				+ ".png";
+		String filePath = "/tmp/" + fileName;
+		File outputFile = new File(filePath);
+		try {
+			ChartUtilities.saveChartAsPNG(outputFile, chart, 1000, 500);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		logger.log("ファイル出力 : " + filePath);
+
+		return outputFile;
 	}
 
 }

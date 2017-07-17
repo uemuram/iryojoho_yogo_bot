@@ -3,6 +3,7 @@ package jp.gr.java_conf.mu.csb.util;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -12,9 +13,15 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.model.AttributeAction;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
+import com.amazonaws.services.dynamodbv2.model.QueryRequest;
+import com.amazonaws.services.dynamodbv2.model.QueryResult;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 
@@ -29,6 +36,59 @@ public class DynamoDBUtil {
 	public DynamoDBUtil(LambdaLogger logger) {
 		this.logger = logger;
 		this.dynamoDBClient = AmazonDynamoDBClientBuilder.standard().withRegion(Regions.AP_NORTHEAST_1).build();
+	}
+
+	// LSIを利用したクエリ検索
+	public List<Map<String, AttributeValue>> query(String tableName, String hashName, String hashValue,
+			String lsiKeyName, ComparisonOperator lsiOpe, String lsiValue, String indexName) {
+		logger.log("--------------query start--------------");
+		logger.log("テーブル名: " + tableName);
+		logger.log("条件1: " + hashName + " = " + hashValue);
+		logger.log("条件2: " + lsiKeyName + " " + lsiOpe + " " + lsiValue);
+
+		// ハッシュキーの条件
+		Map<String, Condition> keyConditions = new HashMap<String, Condition>();
+		keyConditions.put(hashName, new Condition().withComparisonOperator(ComparisonOperator.EQ.toString())
+				.withAttributeValueList(new AttributeValue().withS(hashValue)));
+
+		// インデックスの条件
+		Condition lsiKeyCondition = new Condition().withComparisonOperator(lsiOpe)
+				.withAttributeValueList(new AttributeValue().withS(lsiValue));
+		keyConditions.put(lsiKeyName, lsiKeyCondition);
+
+		// リクエストを組み立て
+		QueryRequest queryRequest = new QueryRequest().withTableName(tableName).withKeyConditions(keyConditions);
+		queryRequest.setIndexName(indexName);
+
+		// クエリ実施
+		QueryResult result = dynamoDBClient.query(queryRequest);
+		for (Map<String, AttributeValue> item : result.getItems()) {
+			printItem(item);
+		}
+		logger.log("--------------query end--------------");
+
+		return result.getItems();
+	}
+
+	// 条件を指定してスキャン
+	public List<Map<String, AttributeValue>> scan(String tableName, String condKey, ComparisonOperator ope,
+			int condValue) {
+		logger.log("--------------scan start--------------");
+		logger.log("テーブル名: " + tableName);
+		logger.log("条件: " + condKey + " " + ope + " " + condValue);
+
+		Condition scanFilterCondition = new Condition().withComparisonOperator(ope)
+				.withAttributeValueList(new AttributeValue().withN(condValue + ""));
+		Map<String, Condition> conditions = new HashMap<String, Condition>();
+		conditions.put(condKey, scanFilterCondition);
+		ScanRequest scanRequest = new ScanRequest().withTableName(tableName).withScanFilter(conditions);
+		ScanResult result = dynamoDBClient.scan(scanRequest);
+		for (Map<String, AttributeValue> item : result.getItems()) {
+			printItem(item);
+		}
+		logger.log("--------------scan end--------------");
+
+		return result.getItems();
 	}
 
 	// アイテムを1件取得(hashName = hashValueの条件で検索)
