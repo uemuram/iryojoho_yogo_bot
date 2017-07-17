@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -179,7 +178,7 @@ public class GetRecord implements RequestHandler<Object, Object> {
 				item = dynamoDBUtil.getItem(TABLE_NAME_USER, "user_name", screenName);
 				if (item == null) {
 					userTweetCountCache.put(screenName, Integer.valueOf(0));
-					// 未登録の場合はここで登録しておく
+					// DB未登録の場合はここで登録しておく
 					Map<String, AttributeValue> putItem = new HashMap<String, AttributeValue>();
 					putItem.put("user_name", new AttributeValue().withS(screenName));
 					putItem.put("not_summarized_tweet_count", new AttributeValue().withN("0"));
@@ -190,10 +189,6 @@ public class GetRecord implements RequestHandler<Object, Object> {
 					userTweetCountCache.put(screenName, Integer.valueOf(item.get("not_summarized_tweet_count").getN()));
 				}
 			}
-			// 対象ユーザの未集計ツイート数をインクリメントしてキャッシュ
-			int userTweetCount = userTweetCountCache.get(screenName) + 1;
-			userTweetCountCache.put(screenName, Integer.valueOf(userTweetCount));
-
 		}
 
 		// 最終的にもう一度DB更新
@@ -228,28 +223,28 @@ public class GetRecord implements RequestHandler<Object, Object> {
 				maxTweetId = status.getId();
 			}
 
+			// 記録をDBに登録
+			String screenName = status.getUser().getScreenName();
 			Map<String, AttributeValue> putItem = new HashMap<String, AttributeValue>();
-			putItem.put("user_name", new AttributeValue().withS(status.getUser().getScreenName() + ""));
+			putItem.put("user_name", new AttributeValue().withS(screenName));
 			putItem.put("reply_to_id", new AttributeValue().withS(status.getInReplyToStatusId() + ""));
 			putItem.put("reply_id", new AttributeValue().withS(status.getId() + ""));
 			putItem.put("record", new AttributeValue().withN(recordStr));
 			putItem.put("reply_date", new AttributeValue().withS(createdAt));
 			dynamoDBUtil.putItem(TABLE_NAME_RECORD, putItem);
-		}
 
-		// 件数反映
-		for (Entry<String, Integer> entry : userTweetCountCache.entrySet()) {
-			String key = entry.getKey();
-			int userTweetCount = entry.getValue();
-			logger.log("****" + key + "****(件数)");
+			// 対象ユーザの未集計ツイート数をインクリメントしてキャッシュ
+			int userTweetCount = userTweetCountCache.get(screenName) + 1;
+			userTweetCountCache.put(screenName, Integer.valueOf(userTweetCount));
 
+			logger.log("****" + screenName + "****(未集計ツイート数)");
+			// 未集計ツイート数をDBに登録
 			Map<String, AttributeValue> updateKey = new HashMap<String, AttributeValue>();
-			updateKey.put("user_name", new AttributeValue().withS(key));
+			updateKey.put("user_name", new AttributeValue().withS(screenName));
 
 			Map<String, AttributeValueUpdate> updateItem = new HashMap<String, AttributeValueUpdate>();
 			updateItem.put("not_summarized_tweet_count", new AttributeValueUpdate().withAction(AttributeAction.PUT)
 					.withValue(new AttributeValue().withN(userTweetCount + "")));
-
 			dynamoDBUtil.updateItem(TABLE_NAME_USER, updateKey, updateItem);
 		}
 
