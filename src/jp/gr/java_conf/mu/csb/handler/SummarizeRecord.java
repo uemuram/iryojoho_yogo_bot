@@ -88,8 +88,9 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 
 			// ツイートと画像添付
 			Status status;
+			String tweetText = "@" + userName + " " + "最近の記録です。" + calcAvarage(records);
 			try {
-				status = twitter.updateStatus(new StatusUpdate("@" + userName + " " + "記録を通知します。").media(graphFile));
+				status = twitter.updateStatus(new StatusUpdate(tweetText).media(graphFile));
 				logger.log("---------------------------------------------------------------------");
 				logger.log("ツイート内容:" + status.getText());
 				logger.log("ツイートID:" + status.getId() + "");
@@ -116,8 +117,57 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 		return null;
 	}
 
-	private File createGraph(List<Map<String, AttributeValue>> records, String userName) {
+	// 平均を計算し、文字列として返す
+	private String calcAvarage(List<Map<String, AttributeValue>> records) {
+		int size = records.size();
+		// データ数が5に満たない場合は計算しない
+		if (size < 5) {
+			return "";
+		}
+		// 最大と最小をチェック
+		int start = size - 5;
+		int maxIdx = start, minIdx = start;
+		double max = 0, min = Double.POSITIVE_INFINITY;
+		for (int i = start; i < size; i++) {
+			Map<String, AttributeValue> item = records.get(i);
+			double record = Double.parseDouble(item.get("record").getN());
+			if (record > max) {
+				maxIdx = i;
+				max = record;
+			} else if (record < min) {
+				minIdx = i;
+				min = record;
+			}
+		}
 
+		// 平均を計算
+		double recordSum = 0;
+		String resultStr = "\n";
+		for (int i = start; i < size; i++) {
+			Map<String, AttributeValue> item = records.get(i);
+			double record = Double.parseDouble(item.get("record").getN());
+			String recordStr;
+			if (i == maxIdx || i == minIdx) {
+				// 最大or最小のためスキップ
+				recordStr = "(" + String.format("%.2f", record) + ")";
+			} else {
+				// スキップせず計算に利用
+				recordSum += record;
+				recordStr = String.format("%.2f", record);
+			}
+			resultStr += recordStr;
+			if (i < size - 1) {
+				resultStr += " ";
+			}
+		}
+		double avarage = recordSum / 3;
+		resultStr += "\n平均:" + String.format("%.2f", avarage);
+
+		return resultStr;
+	}
+
+	// グラフ画像を作成
+	private File createGraph(List<Map<String, AttributeValue>> records, String userName) {
 		// 取り出すデータ範囲の決定
 		int size = records.size();
 		int start = size >= RECORD_COUNT_FOR_GRAPH ? size - RECORD_COUNT_FOR_GRAPH : 0;
