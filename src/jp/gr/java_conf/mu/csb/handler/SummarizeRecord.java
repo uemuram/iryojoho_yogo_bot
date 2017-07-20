@@ -14,6 +14,7 @@ import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.CategoryAxis;
 import org.jfree.chart.axis.CategoryLabelPositions;
+import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
@@ -175,6 +176,7 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 
 		// グラフ用データ準備
 		String series1 = "record";
+		double recordMax = 0;
 		DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 		// 記録でループ
 		for (int i = start; i <= end; i++) {
@@ -185,6 +187,10 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 			String replyDate = item.get("reply_date").getS();
 			logger.log(replyDate + " : " + record);
 			dataset.addValue(record, series1, replyDate);
+			// 最大値をとっておく
+			if (record > recordMax) {
+				recordMax = record;
+			}
 		}
 
 		// JFreeChartオブジェクトの生成
@@ -203,6 +209,9 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 		// ラベルの向きを変える
 		CategoryAxis axis = plot.getDomainAxis();
 		axis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
+		// 文字が枠をはみ出すのを防ぐため、縦軸の最大値を、記録の最大値より少し大きくする
+		NumberAxis numberAxis = (NumberAxis) plot.getRangeAxis();
+		numberAxis.setUpperBound(recordMax * 1.1);
 
 		// グラフ出力
 		String fileName = "record_" + DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS").format(LocalDateTime.now())
