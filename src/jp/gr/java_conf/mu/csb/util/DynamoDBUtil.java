@@ -31,7 +31,10 @@ public class DynamoDBUtil {
 	private AmazonDynamoDB dynamoDBClient;
 	private final static int RETRYCOUNT_PUTITEM = 3;
 	private final static int RETRYINTERVAL_PUTITEM = 30000;
-
+	private final static int RETRYCOUNT_UPDATEITEM = 3;
+	private final static int RETRYINTERVAL_UPDATEITEM = 30000;
+	
+	
 	// コンストラクタ
 	public DynamoDBUtil(LambdaLogger logger) {
 		this.logger = logger;
@@ -180,14 +183,14 @@ public class DynamoDBUtil {
 			} catch (Exception e1) {
 				logger.log("putItem失敗 : " + e1.getMessage());
 				// 失敗した場合は待機後に再実行
-				if (count < RETRYCOUNT_PUTITEM) {
+				if (count < RETRYCOUNT_UPDATEITEM) {
 					try {
-						Thread.sleep(RETRYINTERVAL_PUTITEM);
+						Thread.sleep(RETRYINTERVAL_UPDATEITEM);
 					} catch (InterruptedException e2) {
 					}
 				}
 			}
-		} while (!success && count < RETRYCOUNT_PUTITEM);
+		} while (!success && count < RETRYCOUNT_UPDATEITEM);
 	}
 
 	// アイテムの情報を表示
