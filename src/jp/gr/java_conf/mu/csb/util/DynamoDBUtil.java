@@ -33,8 +33,7 @@ public class DynamoDBUtil {
 	private final static int RETRYINTERVAL_PUTITEM = 30000;
 	private final static int RETRYCOUNT_UPDATEITEM = 3;
 	private final static int RETRYINTERVAL_UPDATEITEM = 30000;
-	
-	
+
 	// コンストラクタ
 	public DynamoDBUtil(LambdaLogger logger) {
 		this.logger = logger;
