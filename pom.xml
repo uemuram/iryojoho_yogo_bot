@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>CubeScrambleBot</groupId>
 	<artifactId>CubeScrambleBot</artifactId>
-	<version>1.0.4</version>
+	<version>1.0.5</version>
 
 	<dependencies>
 		<dependency>
@@ -15,11 +15,6 @@
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-dynamodb</artifactId>
 			<version>1.11.149</version>
-		</dependency>
-		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk-s3</artifactId>
-			<version>1.11.163</version>
 		</dependency>
 		<dependency>
 			<groupId>org.twitter4j</groupId>
