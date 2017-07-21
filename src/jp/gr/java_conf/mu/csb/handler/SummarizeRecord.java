@@ -92,7 +92,11 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 			String tweetText = "@" + userName + " " + "最近の記録です。" + calcAvarage(records);
 
 			// 上限を超えないように140文字で切り取る
-			tweetText = tweetText.substring(0, 140);
+			logger.log("ツイートテキスト: " + tweetText);
+			if (tweetText.length() > 140) {
+				tweetText = tweetText.substring(0, 140);
+				logger.log("ツイートテキスト(切り取り後): " + tweetText);
+			}
 
 			try {
 				status = twitter.updateStatus(new StatusUpdate(tweetText).media(graphFile));
