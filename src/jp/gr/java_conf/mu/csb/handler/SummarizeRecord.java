@@ -90,6 +90,10 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 			// ツイートと画像添付
 			Status status;
 			String tweetText = "@" + userName + " " + "最近の記録です。" + calcAvarage(records);
+
+			// 上限を超えないように140文字で切り取る
+			tweetText = tweetText.substring(0, 140);
+
 			try {
 				status = twitter.updateStatus(new StatusUpdate(tweetText).media(graphFile));
 				logger.log("---------------------------------------------------------------------");
