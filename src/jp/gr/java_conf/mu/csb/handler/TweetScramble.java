@@ -41,14 +41,15 @@ public class TweetScramble implements RequestHandler<Object, Object> {
 		TwitterFactory tf = new TwitterFactory(configuration);
 		Twitter twitter = tf.getInstance();
 
-		// スクランブル生成
+		// ツイート文言を生成
 		String scramble = generateScramble(20);
 		logger.log("スクランブル: " + scramble);
+		String tweetText = scramble + "\n\n※タイム(秒)を何回か返信すると、集計して通知します。";
 
 		// ツイート
 		Status status;
 		try {
-			status = twitter.updateStatus(scramble);
+			status = twitter.updateStatus(tweetText);
 			logger.log("---------------------------------------------------------------------");
 			logger.log("ツイート内容:" + status.getText());
 			logger.log("ツイートID:" + status.getId() + "");
@@ -66,7 +67,7 @@ public class TweetScramble implements RequestHandler<Object, Object> {
 		// ツイート内容をDBに登録
 		Map<String, AttributeValue> item = new HashMap<String, AttributeValue>();
 		item.put("id", new AttributeValue().withS(status.getId() + ""));
-		item.put("scramble", new AttributeValue().withS(status.getText()));
+		item.put("scramble", new AttributeValue().withS(scramble));
 		item.put("tweet_date", new AttributeValue().withS(createdAt));
 		dynamoDBUtil.putItem(TABLE_NAME_SCRAMBLE, item);
 
