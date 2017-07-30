@@ -143,12 +143,17 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 			if (record > max) {
 				maxIdx = i;
 				max = record;
-			} else if (record < min) {
+			}
+			if (record < min) {
 				minIdx = i;
 				min = record;
 			}
 		}
 
+		// 全て同じ値だったときに最大値と最小値を別扱いにするための処理
+		if (maxIdx == minIdx && maxIdx == start) {
+			minIdx = start + 1;
+		}
 		// 平均を計算
 		double recordSum = 0;
 		String resultStr = "\n";
