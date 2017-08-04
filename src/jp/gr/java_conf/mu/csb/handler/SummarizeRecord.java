@@ -87,9 +87,22 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 			// グラフ画像を生成
 			File graphFile = createGraph(records, userName);
 
-			// ツイートと画像添付
-			Status status;
-			String tweetText = "@" + userName + " " + "最近の記録です。" + calcAvarage(records);
+			// 直近の平均を計算
+			HashMap<String, Object> average5 = calcAvarage(5, records);
+			HashMap<String, Object> average12 = calcAvarage(12, records);
+
+			// ツイート文言を生成
+			String tweetText = "@" + userName + " " + "最近の記録です。";
+			if (average5 != null) {
+				tweetText += "\n";
+				tweetText += (String) average5.get("targetRecords");
+				tweetText += "\n\n";
+				tweetText += ("・5回の平均:" + String.format("%.2f", (double) average5.get("average")));
+			}
+			if (average12 != null) {
+				tweetText += "\n";
+				tweetText += ("・12回の平均:" + String.format("%.2f", (double) average12.get("average")));
+			}
 
 			// 上限を超えないように140文字で切り取る
 			logger.log("ツイートテキスト: " + tweetText);
@@ -98,8 +111,9 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 				logger.log("ツイートテキスト(切り取り後): " + tweetText);
 			}
 
+			// ツイート
 			try {
-				status = twitter.updateStatus(new StatusUpdate(tweetText).media(graphFile));
+				Status status = twitter.updateStatus(new StatusUpdate(tweetText).media(graphFile));
 				logger.log("---------------------------------------------------------------------");
 				logger.log("ツイート内容:" + status.getText());
 				logger.log("ツイートID:" + status.getId() + "");
@@ -126,15 +140,15 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 		return null;
 	}
 
-	// 平均を計算し、文字列として返す
-	private String calcAvarage(List<Map<String, AttributeValue>> records) {
+	// 後ろから指定された個数分の平均を計算し、文字列として返す
+	private HashMap<String, Object> calcAvarage(int num, List<Map<String, AttributeValue>> records) {
 		int size = records.size();
-		// データ数が5に満たない場合は計算しない
-		if (size < 5) {
-			return "";
+		// データ数が足りない場合は計算しない
+		if (size < num) {
+			return null;
 		}
 		// 最大と最小をチェック
-		int start = size - 5;
+		int start = size - num;
 		int maxIdx = start, minIdx = start;
 		double max = 0, min = Double.POSITIVE_INFINITY;
 		for (int i = start; i < size; i++) {
@@ -149,14 +163,13 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 				min = record;
 			}
 		}
-
 		// 全て同じ値だったときに最大値と最小値を別扱いにするための処理
 		if (maxIdx == minIdx && maxIdx == start) {
 			minIdx = start + 1;
 		}
 		// 平均を計算
-		double recordSum = 0;
-		String resultStr = "\n";
+		double sum = 0;
+		String targetRecords = "";
 		for (int i = start; i < size; i++) {
 			Map<String, AttributeValue> item = records.get(i);
 			double record = Double.parseDouble(item.get("record").getN());
@@ -166,18 +179,21 @@ public class SummarizeRecord implements RequestHandler<Object, Object> {
 				recordStr = "(" + String.format("%.2f", record) + ")";
 			} else {
 				// スキップせず計算に利用
-				recordSum += record;
+				sum += record;
 				recordStr = String.format("%.2f", record);
 			}
-			resultStr += recordStr;
+			targetRecords += recordStr;
 			if (i < size - 1) {
-				resultStr += " ";
+				targetRecords += " ";
 			}
 		}
-		double avarage = recordSum / 3;
-		resultStr += "\n平均:" + String.format("%.2f", avarage);
+		double average = sum / (num - 2);
 
-		return resultStr;
+		// 戻り値
+		HashMap<String, Object> result = new HashMap<String, Object>();
+		result.put("average", average);
+		result.put("targetRecords", targetRecords);
+		return result;
 	}
 
 	// グラフ画像を作成
