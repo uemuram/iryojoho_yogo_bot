@@ -1,4 +1,4 @@
-package jp.gr.java_conf.mu.csb.handler;
+package jp.gr.java_conf.mu.iyb.handler;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -10,7 +10,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-import jp.gr.java_conf.mu.csb.util.DynamoDBUtil;
+import jp.gr.java_conf.mu.iyb.util.DynamoDBUtil;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;

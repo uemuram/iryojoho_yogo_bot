@@ -1,4 +1,4 @@
-package jp.gr.java_conf.mu.csb.util;
+package jp.gr.java_conf.mu.iyb.util;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
