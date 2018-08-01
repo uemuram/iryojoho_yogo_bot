@@ -18,7 +18,7 @@ import twitter4j.TwitterFactory;
 import twitter4j.conf.Configuration;
 import twitter4j.conf.ConfigurationBuilder;
 
-public class TweetScramble implements RequestHandler<Object, Object> {
+public class Tweet implements RequestHandler<Object, Object> {
 	private LambdaLogger logger;
 
 	private static final String TABLE_NAME_SCRAMBLE = System.getenv("table_name_scramble");
