@@ -1,22 +1,8 @@
 package jp.gr.java_conf.mu.iyb.handler;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-
-import jp.gr.java_conf.mu.iyb.util.DynamoDBUtil;
-import twitter4j.Status;
-import twitter4j.Twitter;
-import twitter4j.TwitterException;
-import twitter4j.TwitterFactory;
-import twitter4j.conf.Configuration;
-import twitter4j.conf.ConfigurationBuilder;
 
 public class Tweet implements RequestHandler<Object, Object> {
 	private LambdaLogger logger;
@@ -27,11 +13,11 @@ public class Tweet implements RequestHandler<Object, Object> {
 		logger = context.getLogger();
 		logger.log("Input: " + input);
 
-		// // DynamoDB—˜—p€”õ
+		// // DynamoDBåˆ©ç”¨æº–å‚™
 		// DynamoDBUtil dynamoDBUtil = new DynamoDBUtil(logger);
 		//
-		// // Twitter—˜—p€”õ
-		// // ŠÂ‹«•Ï”‚©‚çŠeíƒL[‚ğİ’è
+		// // Twitteråˆ©ç”¨æº–å‚™
+		// // ç’°å¢ƒå¤‰æ•°ã‹ã‚‰å„ç¨®ã‚­ãƒ¼ã‚’è¨­å®š
 		// ConfigurationBuilder cb = new ConfigurationBuilder();
 		// cb.setDebugEnabled(true).setOAuthConsumerKey(System.getenv("twitter4j_oauth_consumerKey"))
 		// .setOAuthConsumerSecret(System.getenv("twitter4j_oauth_consumerSecret"))
@@ -41,32 +27,32 @@ public class Tweet implements RequestHandler<Object, Object> {
 		// TwitterFactory tf = new TwitterFactory(configuration);
 		// Twitter twitter = tf.getInstance();
 		//
-		// // ƒcƒC[ƒg•¶Œ¾‚ğ¶¬
+		// // ãƒ„ã‚¤ãƒ¼ãƒˆæ–‡è¨€ã‚’ç”Ÿæˆ
 		// String scramble = generateScramble(20);
-		// logger.log("ƒXƒNƒ‰ƒ“ƒuƒ‹: " + scramble);
-		// String tweetText = scramble + "\n\n¦ƒ^ƒCƒ€(•b)‚ğ‰½‰ñ‚©•ÔM‚·‚é‚ÆAWŒv‚µ‚Ä’Ê’m‚µ‚Ü‚·B";
+		// logger.log("ã‚¹ã‚¯ãƒ©ãƒ³ãƒ–ãƒ«: " + scramble);
+		// String tweetText = scramble + "\n\nâ€»ã‚¿ã‚¤ãƒ (ç§’)ã‚’ä½•å›ã‹è¿”ä¿¡ã™ã‚‹ã¨ã€é›†è¨ˆã—ã¦é€šçŸ¥ã—ã¾ã™ã€‚";
 		//
-		// // ƒcƒC[ƒg
+		// // ãƒ„ã‚¤ãƒ¼ãƒˆ
 		// Status status;
 		// try {
 		// status = twitter.updateStatus(tweetText);
 		// logger.log("---------------------------------------------------------------------");
-		// logger.log("ƒcƒC[ƒg“à—e:" + status.getText());
-		// logger.log("ƒcƒC[ƒgID:" + status.getId() + "");
-		// logger.log("ƒcƒC[ƒg¶¬“ú:" + status.getCreatedAt() + "");
+		// logger.log("ãƒ„ã‚¤ãƒ¼ãƒˆå†…å®¹:" + status.getText());
+		// logger.log("ãƒ„ã‚¤ãƒ¼ãƒˆID:" + status.getId() + "");
+		// logger.log("ãƒ„ã‚¤ãƒ¼ãƒˆç”Ÿæˆæ—¥æ™‚:" + status.getCreatedAt() + "");
 		// } catch (TwitterException e1) {
-		// logger.log("ƒcƒC[ƒg¸”s : " + e1.getErrorMessage());
+		// logger.log("ãƒ„ã‚¤ãƒ¼ãƒˆå¤±æ•— : " + e1.getErrorMessage());
 		// throw new RuntimeException(e1);
 		// }
 		//
-		// // ƒcƒC[ƒg‚ğæ“¾
+		// // ãƒ„ã‚¤ãƒ¼ãƒˆæ™‚åˆ»ã‚’å–å¾—
 		// LocalDateTime localDateTime =
 		// LocalDateTime.parse(status.getCreatedAt().toString(),
 		// DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz yyyy"));
 		// String createdAt = DateTimeFormatter.ofPattern("yyyy/MM/dd
 		// HH:mm:ss").format(localDateTime);
 		//
-		// // ƒcƒC[ƒg“à—e‚ğDB‚É“o˜^
+		// // ãƒ„ã‚¤ãƒ¼ãƒˆå†…å®¹ã‚’DBã«ç™»éŒ²
 		// Map<String, AttributeValue> item = new HashMap<String,
 		// AttributeValue>();
 		// item.put("id", new AttributeValue().withS(status.getId() + ""));
@@ -83,13 +69,13 @@ public class Tweet implements RequestHandler<Object, Object> {
 		return output;
 	}
 
-	// o—Í¶¬ƒNƒ‰ƒX
+	// å‡ºåŠ›ç”Ÿæˆã‚¯ãƒ©ã‚¹
 	public static class Output {
 		public Integer yogoNo;
 		public Integer index;
 	}
 
-	// ƒXƒNƒ‰ƒ“ƒuƒ‹‚ğ¶¬
+	// ã‚¹ã‚¯ãƒ©ãƒ³ãƒ–ãƒ«ã‚’ç”Ÿæˆ
 	private String generateScramble(int l) {
 		String faces[] = { "U", "D", "R", "L", "F", "B" };
 		String options[] = { "", "'", "2" };
@@ -98,7 +84,7 @@ public class Tweet implements RequestHandler<Object, Object> {
 		int before2Face = -1;
 		int currentFace;
 		for (int i = 0; i < l; i++) {
-			// ‰ñ‚·–Ê‚ğŒˆ‚ß‚éB
+			// å›ã™é¢ã‚’æ±ºã‚ã‚‹ã€‚
 			do {
 				currentFace = randomN(6);
 			} while (!faceCheck(currentFace, beforeFace, before2Face));
@@ -106,25 +92,25 @@ public class Tweet implements RequestHandler<Object, Object> {
 			if (i < l - 1) {
 				scramble += " ";
 			}
-			// 2‚Â‘OA1‚Â‘O‚Ìè‡‚ğ‹L˜^
+			// 2ã¤å‰ã€1ã¤å‰ã®æ‰‹é †ã‚’è¨˜éŒ²
 			before2Face = beforeFace;
 			beforeFace = currentFace;
 		}
 		return scramble;
 	}
 
-	// ní—Ş(0`n-1)‚Ì—”‚ğ¶¬
+	// nç¨®é¡(0ï½n-1)ã®ä¹±æ•°ã‚’ç”Ÿæˆ
 	private int randomN(int n) {
 		return (int) (Math.random() * n);
 	}
 
-	// ‰ñ‚·–Ê‚Ìƒ`ƒFƒbƒN
+	// å›ã™é¢ã®ãƒã‚§ãƒƒã‚¯
 	private boolean faceCheck(int current, int before, int before2) {
-		// 1‚Â‘O‚Æ“¯‚¶–Ê‚Í‰ñ‚³‚È‚¢
+		// 1ã¤å‰ã¨åŒã˜é¢ã¯å›ã•ãªã„
 		if (current == before) {
 			return false;
 		}
-		// “¯‚¶–Ê -> ‘Î–Ê -> “¯‚¶–Ê ‚Ì‡‚Ì‰ñ“]‚ÍNG(—á: U2, D, U')
+		// åŒã˜é¢ -> å¯¾é¢ -> åŒã˜é¢ ã®é †ã®å›è»¢ã¯NG(ä¾‹: U2, D, U')
 		if (current == before2
 				&& ((current % 2 == 0 && current - before == -1) || (current % 2 == 1 && current - before == 1))) {
 			return false;
