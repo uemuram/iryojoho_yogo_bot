@@ -11,15 +11,21 @@ public class Tweet implements RequestHandler<YogoDao, Object> {
 		logger = context.getLogger();
 		logger.log("Input: " + input);
 
-		logger.log("" + input.getOffset());
-		logger.log(input.getKeyword());
-		logger.log(input.getDescription());
+		int offset = input.getOffset();
+		String keyword = input.getKeyword();
+		String description = input.getDescription();
 
-		// int offset = in
+		logger.log("オフセット : " + offset);
+		logger.log("キーワード : " + keyword);
+		logger.log("説明 : " + description);
 
-		// // DynamoDB利用準備
-		// DynamoDBUtil dynamoDBUtil = new DynamoDBUtil(logger);
-		//
+		// TODO ツイートIDをDAOに入れる
+		// TODO 判断用部品を入れる(オフセットが-1なら、とか)
+		// TODO ツイートの余地があればツイート
+		// TODO オフセットが0なら、キーワード + つぶやけるとこまでツイート
+		// TODO オフセットが0以上なら返信
+		// TODO 最後まで行ったらオフセット-1を返す、そうでなければオフセット値を返す
+
 		// // Twitter利用準備
 		// // 環境変数から各種キーを設定
 		// ConfigurationBuilder cb = new ConfigurationBuilder();
