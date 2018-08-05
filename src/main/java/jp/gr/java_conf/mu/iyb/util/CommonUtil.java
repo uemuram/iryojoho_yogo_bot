@@ -1,17 +1,5 @@
 package jp.gr.java_conf.mu.iyb.util;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.regex.Pattern;
-
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-
 public class CommonUtil {
 
 	// // テスト
@@ -71,53 +59,67 @@ public class CommonUtil {
 	// return list;
 	// }
 
-	// 指定されたファイルを読み込んで配列に格納して返す
-	// ErrorBehavior == trueであればエラー時に終了 falseであればエラー時にnullを返す
-	public ArrayList<String> readFile(String filename, boolean errorBehavior, LambdaLogger logger) {
-
-		ArrayList<String> list = new ArrayList<String>();
-
-		URL url = getClass().getClassLoader().getResource(filename);
-		String filePath = url.getPath();
-		logger.log("Path : " + filePath);
-
-		// ファイルの存在を確認する
-		File file = new File(filePath);
-		if (file.exists()) {
-			logger.log("ファイルが存在します");
-		} else {
-			logger.log("ファイルが存在しません");
-		}
-
-		logger.log("xxx");
-		// "src/main/resources"からファイルを読み込む．
-		try {
-			InputStream is = ClassLoader.getSystemResourceAsStream(filePath);
-			BufferedReader br = new BufferedReader(new InputStreamReader(is));
-			String l = null;
-
-			while ((l = br.readLine()) != null) {
-				logger.log("aaa");
-				// コメント行と空行をスキップ
-				if (l.length() == 0 || l.startsWith("#")) {
-					continue;
-				}
-				// System.out.println(l);
-				list.add(l);
-			}
-			// } catch (IOException | NullPointerException e) {
-		} catch (Exception e) {
-			if (errorBehavior) {
-				logger.log("bbb");
-				e.printStackTrace();
-			} else {
-				logger.log("ccc");
-				return null;
-			}
-		}
-		logger.log("ddd");
-		return list;
-	}
+	// // 指定されたファイルを読み込んで配列に格納して返す
+	// // ErrorBehavior == trueであればエラー時に終了 falseであればエラー時にnullを返す
+	// public ArrayList<String> readFile(String filename, boolean errorBehavior,
+	// LambdaLogger logger) {
+	//
+	// ArrayList<String> list = new ArrayList<String>();
+	//
+	// URL url = getClass().getClassLoader().getResource(filename);
+	// String filePath = url.getPath();
+	// logger.log("Path : " + filePath);
+	//
+	// // ファイルの存在を確認する
+	// File file = new File(filePath);
+	// if (file.exists()) {
+	// logger.log("ファイルが存在します");
+	// } else {
+	// logger.log("ファイルが存在しません");
+	// }
+	//
+	// FileReader fileReader = null;
+	// CSVReader csvReader = null;
+	//
+	// try {
+	// fileReader = new FileReader(filePath);
+	// csvReader = new CSVReader(fileReader);
+	// List<String[]> recordList = csvReader.readAll();
+	// for (String[] record : recordList) {
+	// logger.log(record[0] + "," + record[1]);
+	// }
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// }
+	// // logger.log("xxx");
+	// // // "src/main/resources"からファイルを読み込む．
+	// // try {
+	// // InputStream is = ClassLoader.getSystemResourceAsStream(filePath);
+	// // BufferedReader br = new BufferedReader(new InputStreamReader(is));
+	// // String l = null;
+	// //
+	// // while ((l = br.readLine()) != null) {
+	// // logger.log("aaa");
+	// // // コメント行と空行をスキップ
+	// // if (l.length() == 0 || l.startsWith("#")) {
+	// // continue;
+	// // }
+	// // // System.out.println(l);
+	// // list.add(l);
+	// // }
+	// // // } catch (IOException | NullPointerException e) {
+	// // } catch (Exception e) {
+	// // if (errorBehavior) {
+	// // logger.log("bbb");
+	// // e.printStackTrace();
+	// // } else {
+	// // logger.log("ccc");
+	// // return null;
+	// // }
+	// // }
+	// // logger.log("ddd");
+	// return list;
+	// }
 
 	// スリープする
 	public void sleep(int millisec) {
