@@ -64,7 +64,7 @@ public class Tweet implements RequestHandler<Object, Object> {
 		output.yogoNo = 3;
 		output.index = 10;
 
-		int a = 3 / 0;
+		// int a = 3 / 0;
 
 		return output;
 	}
