@@ -16,9 +16,14 @@ import twitter4j.conf.ConfigurationBuilder;
 public class TwitterUtil {
 
 	private Twitter twitter;
+	private CommonUtil util;
 
 	// コンストラクタ
 	public TwitterUtil() {
+
+		// util利用準備
+		util = new CommonUtil();
+
 		// Twitter利用準備
 		// 環境変数から各種キーを読み込む
 		String consumerKey = System.getenv("twitter4j_oauth_consumerKey");
@@ -116,7 +121,7 @@ public class TwitterUtil {
 
 			query.setMaxId(maxId);
 			// 連続してリクエストを投げないようにするために少し待つ
-			CommonUtil.sleep(1000);
+			util.sleep(1000);
 			try {
 				result = twitter.search(query);
 				tmpSearchResultList = result.getTweets();
@@ -176,7 +181,7 @@ public class TwitterUtil {
 				// 余計な決まり文句(FF外から失礼します 等)が入っているツイートを除外
 				list.remove(i);
 				logStr += "【削除】";
-			} else if (!CommonUtil.isIncludedHiragana(text)) {
+			} else if (!util.isIncludedHiragana(text)) {
 				// ひらがなが1文字も入っていないツイートを除外
 				list.remove(i);
 				logStr += "【削除】";

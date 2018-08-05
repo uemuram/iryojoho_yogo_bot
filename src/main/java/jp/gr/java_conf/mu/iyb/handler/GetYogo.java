@@ -17,7 +17,8 @@ public class GetYogo implements RequestHandler<Object, Object> {
 		logger = context.getLogger();
 		logger.log("Input: " + input);
 
-		ArrayList<String> xx = CommonUtil.readFile("yogo.csv", true);
+		CommonUtil util = new CommonUtil();
+		ArrayList<String> xx = util.readFile("yogo.csv", true, logger);
 
 		logger.log(xx.get(0));
 		logger.log(xx.get(1));
