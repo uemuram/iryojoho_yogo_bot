@@ -1,6 +1,7 @@
 package jp.gr.java_conf.mu.iyb.util;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -78,6 +79,15 @@ public class CommonUtil {
 
 		URL url = getClass().getClassLoader().getResource(filename);
 		String filePath = url.getPath();
+		logger.log("Path : " + filePath);
+
+		// ファイルの存在を確認する
+		File file = new File(filePath);
+		if (file.exists()) {
+			logger.log("ファイルが存在します");
+		} else {
+			logger.log("ファイルが存在しません");
+		}
 
 		logger.log("xxx");
 		// "src/main/resources"からファイルを読み込む．
