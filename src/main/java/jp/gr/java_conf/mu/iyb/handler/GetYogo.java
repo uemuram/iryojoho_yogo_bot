@@ -46,20 +46,16 @@ public class GetYogo implements RequestHandler<Object, Object> {
 
 		// 読み込んだ内容から1つ選択
 		int index = randomN(yogoList.size());
-		Output output = new Output();
-		output.keyword = yogoList.get(index)[0];
-		output.description = yogoList.get(index)[1];
+		YogoDao output = new YogoDao();
+		output.setOffset(0);
+		output.setKeyword(yogoList.get(index)[0]);
+		output.setDescription(yogoList.get(index)[1]);
+
 		logger.log("インデックス  : " + index);
-		logger.log("キーワード : " + output.keyword);
-		logger.log("説明: " + output.description);
+		logger.log("キーワード : " + output.getKeyword());
+		logger.log("説明: " + output.getDescription());
 
 		return output;
-	}
-
-	// 出力生成クラス
-	public static class Output {
-		public String keyword;
-		public String description;
 	}
 
 	// n種類(0～n-1)の乱数を生成

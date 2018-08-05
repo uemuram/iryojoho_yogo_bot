@@ -4,14 +4,18 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-public class Tweet implements RequestHandler<Object, Object> {
+public class Tweet implements RequestHandler<YogoDao, Object> {
 	private LambdaLogger logger;
 
-	private static final String TABLE_NAME_SCRAMBLE = System.getenv("table_name_scramble");
-
-	public Object handleRequest(Object input, Context context) {
+	public Object handleRequest(YogoDao input, Context context) {
 		logger = context.getLogger();
 		logger.log("Input: " + input);
+
+		logger.log("" + input.getOffset());
+		logger.log(input.getKeyword());
+		logger.log(input.getDescription());
+
+		// int offset = in
 
 		// // DynamoDB利用準備
 		// DynamoDBUtil dynamoDBUtil = new DynamoDBUtil(logger);
@@ -60,61 +64,12 @@ public class Tweet implements RequestHandler<Object, Object> {
 		// item.put("tweet_date", new AttributeValue().withS(createdAt));
 		// dynamoDBUtil.putItem(TABLE_NAME_SCRAMBLE, item);
 
-		Output output = new Output();
-		output.yogoNo = 3;
-		output.index = 10;
-
-		// int a = 3 / 0;
+		YogoDao output = new YogoDao();
+		output.setOffset(2);
+		output.setKeyword("aaa");
+		output.setDescription("bbb");
 
 		return output;
 	}
 
-	// 出力生成クラス
-	public static class Output {
-		public Integer yogoNo;
-		public Integer index;
-	}
-
-	// スクランブルを生成
-	private String generateScramble(int l) {
-		String faces[] = { "U", "D", "R", "L", "F", "B" };
-		String options[] = { "", "'", "2" };
-		String scramble = "";
-		int beforeFace = -1;
-		int before2Face = -1;
-		int currentFace;
-		for (int i = 0; i < l; i++) {
-			// 回す面を決める。
-			do {
-				currentFace = randomN(6);
-			} while (!faceCheck(currentFace, beforeFace, before2Face));
-			scramble += (faces[currentFace] + options[randomN(3)]);
-			if (i < l - 1) {
-				scramble += " ";
-			}
-			// 2つ前、1つ前の手順を記録
-			before2Face = beforeFace;
-			beforeFace = currentFace;
-		}
-		return scramble;
-	}
-
-	// n種類(0～n-1)の乱数を生成
-	private int randomN(int n) {
-		return (int) (Math.random() * n);
-	}
-
-	// 回す面のチェック
-	private boolean faceCheck(int current, int before, int before2) {
-		// 1つ前と同じ面は回さない
-		if (current == before) {
-			return false;
-		}
-		// 同じ面 -> 対面 -> 同じ面 の順の回転はNG(例: U2, D, U')
-		if (current == before2
-				&& ((current % 2 == 0 && current - before == -1) || (current % 2 == 1 && current - before == 1))) {
-			return false;
-		}
-		return true;
-	}
 }
