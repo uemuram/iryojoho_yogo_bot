@@ -46,15 +46,14 @@ public class GetYogo implements RequestHandler<Object, Object> {
 
 		// 読み込んだ内容から1つ選択
 		int index = randomN(yogoList.size());
+		logger.log("インデックス  : " + index);
 		YogoDao output = new YogoDao();
 		output.setOffset(0);
 		output.setKeyword(yogoList.get(index)[0]);
-		output.setDescription(yogoList.get(index)[1]);
-		output.setBeforeTweetId(-1);
-
-		logger.log("インデックス  : " + index);
 		logger.log("キーワード : " + output.getKeyword());
+		output.setDescription(yogoList.get(index)[1]);
 		logger.log("説明: " + output.getDescription());
+		output.setBeforeTweetId(-1);
 
 		return output;
 	}
