@@ -50,6 +50,7 @@ public class GetYogo implements RequestHandler<Object, Object> {
 		output.setOffset(0);
 		output.setKeyword(yogoList.get(index)[0]);
 		output.setDescription(yogoList.get(index)[1]);
+		output.setBeforeTweetId(-1);
 
 		logger.log("インデックス  : " + index);
 		logger.log("キーワード : " + output.getKeyword());

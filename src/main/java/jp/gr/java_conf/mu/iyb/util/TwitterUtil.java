@@ -7,6 +7,7 @@ import java.util.List;
 import twitter4j.Query;
 import twitter4j.QueryResult;
 import twitter4j.Status;
+import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
@@ -45,19 +46,54 @@ public class TwitterUtil {
 		this.twitter = tf.getInstance();
 	}
 
+	// // 指定された文言をツイートする
+	// public void tweet(String msg) {
+	// Status status;
+	// try {
+	// status = twitter.updateStatus(msg);
+	// System.out.println("---------------------------------------------------------------------");
+	// System.out.println("ツイート内容:\n" + status.getText());
+	// System.out.println("ツイートID:" + status.getId() + "");
+	// System.out.println("ツイート生成日時:" + status.getCreatedAt() + "");
+	// System.out.println("---------------------------------------------------------------------");
+	// } catch (TwitterException e1) {
+	// System.out.println("ツイート失敗 : " + e1.getErrorMessage());
+	// throw new RuntimeException(e1);
+	// }
+	// }
+
 	// 指定された文言をツイートする
-	public void tweet(String msg) {
+	public Status tweet(String msg) {
 		Status status;
 		try {
 			status = twitter.updateStatus(msg);
-			System.out.println("---------------------------------------------------------------------");
+			System.out.println("------------------ツイート----------------------------------------------");
 			System.out.println("ツイート内容:\n" + status.getText());
 			System.out.println("ツイートID:" + status.getId() + "");
 			System.out.println("ツイート生成日時:" + status.getCreatedAt() + "");
+			System.out.println("---------------------------------------------------------------------");
 		} catch (TwitterException e1) {
 			System.out.println("ツイート失敗 : " + e1.getErrorMessage());
 			throw new RuntimeException(e1);
 		}
+		return status;
+	}
+
+	// 指定された文言で、指定したツイートに対して返信する
+	public Status reply(String msg, long tweetId) {
+		Status status;
+		try {
+			status = twitter.updateStatus(new StatusUpdate(msg).inReplyToStatusId(tweetId));
+			System.out.println("------------------リプライ----------------------------------------------");
+			System.out.println("ツイート内容:\n" + status.getText());
+			System.out.println("ツイートID:" + status.getId() + "");
+			System.out.println("ツイート生成日時:" + status.getCreatedAt() + "");
+			System.out.println("---------------------------------------------------------------------");
+		} catch (TwitterException e1) {
+			System.out.println("ツイート失敗 : " + e1.getErrorMessage());
+			throw new RuntimeException(e1);
+		}
+		return status;
 	}
 
 	// 指定されたキーワードで、指定された件数分Twitterを検索し、そのテキスト要素を返す

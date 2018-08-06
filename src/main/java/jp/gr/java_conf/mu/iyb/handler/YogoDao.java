@@ -4,6 +4,7 @@ public class YogoDao {
 	private Integer offset;
 	private String keyword;
 	private String description;
+	private long beforeTweetId;
 
 	public Integer getOffset() {
 		return offset;
@@ -27,6 +28,14 @@ public class YogoDao {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public long getBeforeTweetId() {
+		return beforeTweetId;
+	}
+
+	public void setBeforeTweetId(long beforeTweetId) {
+		this.beforeTweetId = beforeTweetId;
 	}
 
 }

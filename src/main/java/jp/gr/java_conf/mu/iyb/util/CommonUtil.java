@@ -7,15 +7,15 @@ public class CommonUtil {
 	// System.out.println("test");
 	// }
 	//
-	// // 大きい方を返す
-	// public static int max(int a, int b) {
-	// return a > b ? a : b;
-	// }
-	//
-	// // 小さい方を返す
-	// public static int min(int a, int b) {
-	// return a < b ? a : b;
-	// }
+	// 大きい方を返す
+	public int max(int a, int b) {
+		return a > b ? a : b;
+	}
+
+	// 小さい方を返す
+	public int min(int a, int b) {
+		return a < b ? a : b;
+	}
 	//
 	// // 0～n-1までの乱数を返す(n=3なら0,1,2のどれかを返す)
 	// public static int random(int n) {

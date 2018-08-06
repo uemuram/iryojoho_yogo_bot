@@ -4,76 +4,65 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
+import jp.gr.java_conf.mu.iyb.util.CommonUtil;
+import jp.gr.java_conf.mu.iyb.util.TwitterUtil;
+import twitter4j.Status;
+
 public class Tweet implements RequestHandler<YogoDao, Object> {
 	private LambdaLogger logger;
+	private final int TWEET_LIMIT = 140;
 
 	public Object handleRequest(YogoDao input, Context context) {
+		CommonUtil util = new CommonUtil();
 		logger = context.getLogger();
 		logger.log("Input: " + input);
 
 		int offset = input.getOffset();
 		String keyword = input.getKeyword();
 		String description = input.getDescription();
+		long beforeTweetId = input.getBeforeTweetId();
 
 		logger.log("オフセット : " + offset);
 		logger.log("キーワード : " + keyword);
 		logger.log("説明 : " + description);
+		logger.log("前回のツイートID: " + beforeTweetId);
 
-		// TODO ツイートIDをDAOに入れる
-		// TODO 判断用部品を入れる(オフセットが-1なら、とか)
-		// TODO ツイートの余地があればツイート
-		// TODO オフセットが0なら、キーワード + つぶやけるとこまでツイート
-		// TODO オフセットが0以上なら返信
-		// TODO 最後まで行ったらオフセット-1を返す、そうでなければオフセット値を返す
+		// ツイートする文言
+		String tweetText = "";
+		// 初回実行時
+		if (offset == 0) {
+			tweetText += "【" + keyword + "】\n";
+		}
+		tweetText += description.substring(offset);
+		tweetText = tweetText.substring(0, util.min(TWEET_LIMIT, tweetText.length()));
+		logger.log("生成された文言 : " + tweetText);
 
-		// // Twitter利用準備
-		// // 環境変数から各種キーを設定
-		// ConfigurationBuilder cb = new ConfigurationBuilder();
-		// cb.setDebugEnabled(true).setOAuthConsumerKey(System.getenv("twitter4j_oauth_consumerKey"))
-		// .setOAuthConsumerSecret(System.getenv("twitter4j_oauth_consumerSecret"))
-		// .setOAuthAccessToken(System.getenv("twitter4j_oauth_accessToken"))
-		// .setOAuthAccessTokenSecret(System.getenv("twitter4j_oauth_accessTokenSecret"));
-		// Configuration configuration = cb.build();
-		// TwitterFactory tf = new TwitterFactory(configuration);
-		// Twitter twitter = tf.getInstance();
-		//
-		// // ツイート文言を生成
-		// String scramble = generateScramble(20);
-		// logger.log("スクランブル: " + scramble);
-		// String tweetText = scramble + "\n\n※タイム(秒)を何回か返信すると、集計して通知します。";
-		//
-		// // ツイート
-		// Status status;
-		// try {
-		// status = twitter.updateStatus(tweetText);
-		// logger.log("---------------------------------------------------------------------");
-		// logger.log("ツイート内容:" + status.getText());
-		// logger.log("ツイートID:" + status.getId() + "");
-		// logger.log("ツイート生成日時:" + status.getCreatedAt() + "");
-		// } catch (TwitterException e1) {
-		// logger.log("ツイート失敗 : " + e1.getErrorMessage());
-		// throw new RuntimeException(e1);
-		// }
-		//
-		// // ツイート時刻を取得
-		// LocalDateTime localDateTime =
-		// LocalDateTime.parse(status.getCreatedAt().toString(),
-		// DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz yyyy"));
-		// String createdAt = DateTimeFormatter.ofPattern("yyyy/MM/dd
-		// HH:mm:ss").format(localDateTime);
-		//
-		// // ツイート内容をDBに登録
-		// Map<String, AttributeValue> item = new HashMap<String,
-		// AttributeValue>();
-		// item.put("id", new AttributeValue().withS(status.getId() + ""));
-		// item.put("scramble", new AttributeValue().withS(scramble));
-		// item.put("tweet_date", new AttributeValue().withS(createdAt));
-		// dynamoDBUtil.putItem(TABLE_NAME_SCRAMBLE, item);
+		// 次回用のオフセット値を計算
+		int newOffset = offset + TWEET_LIMIT;
+		if (offset == 0) {
+			newOffset -= (keyword.length() + 3);
+		}
+		// 終了判定
+		if (newOffset > description.length()) {
+			newOffset = -1;
+		}
+
+		// Twitter利用準備
+		TwitterUtil twitterUtil = new TwitterUtil();
+
+		Status status;
+		// ツイート実行
+		if (beforeTweetId == -1) {
+			status = twitterUtil.tweet(tweetText);
+		} else {
+			status = twitterUtil.reply(tweetText, beforeTweetId);
+		}
 
 		YogoDao output = new YogoDao();
-		output.setOffset(2);
-		output.setKeyword("aaa");
-		output.setDescription("bbb");
+		output.setOffset(newOffset);
+		output.setKeyword(keyword);
+		output.setDescription(description);
+		output.setBeforeTweetId(status.getId());
 
 		return output;
 	}
