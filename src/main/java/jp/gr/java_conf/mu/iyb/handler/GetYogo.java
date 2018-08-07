@@ -3,6 +3,7 @@ package jp.gr.java_conf.mu.iyb.handler;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -25,11 +26,14 @@ public class GetYogo implements RequestHandler<Object, Object> {
 		// CSV読み込み実施
 		FileReader fileReader = null;
 		CSVReader csvReader = null;
-		List<String[]> yogoList = null;
+		List<String[]> yogoList = new ArrayList<String[]>();
+		String[] nextLine;
 		try {
 			fileReader = new FileReader(filePath);
 			csvReader = new CSVReader(fileReader);
-			yogoList = csvReader.readAll();
+			while ((nextLine = csvReader.readNext()) != null) {
+				yogoList.add(nextLine);
+			}
 			logger.log(yogoList.size() + " 件読み込み");
 		} catch (IOException e) {
 			e.printStackTrace();
