@@ -33,6 +33,9 @@ public class GetYogo implements RequestHandler<Object, Object> {
 			csvReader = new CSVReader(fileReader);
 			while ((nextLine = csvReader.readNext()) != null) {
 				yogoList.add(nextLine);
+				// logger.log(nextLine[0]);
+				// logger.log(nextLine[1]);
+				// logger.log("--");
 			}
 			logger.log(yogoList.size() + " 件読み込み");
 		} catch (IOException e) {
