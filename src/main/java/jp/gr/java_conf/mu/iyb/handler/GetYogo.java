@@ -28,12 +28,13 @@ public class GetYogo implements RequestHandler<Object, Object> {
 		CSVReader csvReader = null;
 		List<String[]> yogoList = new ArrayList<String[]>();
 		String[] nextLine;
+		// int x = 1;
 		try {
 			fileReader = new FileReader(filePath);
 			csvReader = new CSVReader(fileReader);
 			while ((nextLine = csvReader.readNext()) != null) {
 				yogoList.add(nextLine);
-				// logger.log(nextLine[0]);
+				// logger.log(x + " : " + nextLine[0]);
 				// logger.log(nextLine[1]);
 				// logger.log("--");
 			}
