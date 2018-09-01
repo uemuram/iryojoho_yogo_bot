@@ -37,6 +37,7 @@ public class GetYogo implements RequestHandler<Object, Object> {
 				// logger.log(x + " : " + nextLine[0]);
 				// logger.log(nextLine[1]);
 				// logger.log("--");
+				// x++;
 			}
 			logger.log(yogoList.size() + " 件読み込み");
 		} catch (IOException e) {
